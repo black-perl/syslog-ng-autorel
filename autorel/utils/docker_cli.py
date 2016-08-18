@@ -7,6 +7,7 @@ import os
 import random
 import string
 import sys
+from io import BytesIO
 from docker import Client
 
 
@@ -104,12 +105,14 @@ class Docker(object):
             image and starting the docker container
         """
         ## Pull the docker image
-        self._logger.info("Pulling the {0} docker image"
+        self._logger.info("Building the {0} docker image"
             .format(image_path))
         image_tag = self._generate_tag()
+        with open(image_path,'r') as f:
+            dockerfile = f.read()
+        dockerfile = BytesIO(dockerfile.encode('utf-8'))
         self._cli_command("build",
-                          dockerfile=image_path,
-                          path=os.path.dirname(image_path),
+                          fileobj=dockerfile,
                           tag=image_tag
                           )
         self._logger.info("Image successfuly build")
