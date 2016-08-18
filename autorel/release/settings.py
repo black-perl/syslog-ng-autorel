@@ -1,13 +1,14 @@
 import tempfile
 import os
+from autorel import settings as global_settings
 
 
-PROJECT = "black-perl/syslog-ng"
+PROJECT = global_settings.PROJECT
 
 PACKAGE = "syslog-ng"
 
 DEBIAN_CHANGELOG = '''
-{PACKAGE_NAME} {PACKAGE_VERSION} {RELEASE_TAG}; urgency=low
+{PACKAGE_NAME} ({PACKAGE_VERSION}) {RELEASE_TAG}; urgency=low
 
   * New upstream version.
 
@@ -18,23 +19,15 @@ mode: debian-changelog
 End:
 '''
 
-OBS_USER = ""
-
-OBS_PASS = ""
-
-OSC_CONFIG_FILE = "obs_config"
-
-OBS_PROJECT = "home:laszlo_budai:syslog-ng-gsoc-autorel"
-
-OBS_PACKAGE = "syslog-ng-autorel"
-
-GITHUB_AUTH_TOKEN = ""
+GITHUB_AUTH_TOKEN = global_settings.GITHUB_AUTH_TOKEN
                        
 TZ_OFFSET = "+05:30"
 
 PROJECT_CLONE_URL = "https://github.com/black-perl/syslog-ng.git"
 
-PROJECT_CLONE_PATH = tempfile.mkdtemp()
+PROJECT_CLONE_PATH = os.path.join(tempfile.mkdtemp(),
+								  PACKAGE
+								  )
 
 COMMITTER_NAME = "Ankush Sharma"
 
@@ -42,14 +35,14 @@ COMMITTER_EMAIL = "ankprashar@gmail.com"
 
 VERSION_FILE = "VERSION"
 
-SOURCE_TARBALL_DOCKERFILE = os.path.abspath("../dockerfiles/source-tarball-build")
+SOURCE_TARBALL_DOCKERFILE = "/home/ank/test/syslog-ng-autorel/autorel/dockerfiles/source-tarball-build"
 
-DEBIAN_SOURCE_DOCKERFILE = os.path.abspath("../dockerfiles/debian-source-build") 
+DEBIAN_SOURCE_DOCKERFILE =  "/home/ank/test/syslog-ng-autorel/autorel/dockerfiles/debian-source-build"
 
 PULL_REQUEST_TITLE = "New Release"
 
 PULL_REQUEST_BODY = "Autorel released syslog-ng"
 
-DEBIAN_CHANGELOG_FILE = "debian/changelog.in"
+DEBIAN_CHANGELOG_FILE = "debian/changelog"
 
 SOURCE_MOUNT_DIRECTORY = "/home"
