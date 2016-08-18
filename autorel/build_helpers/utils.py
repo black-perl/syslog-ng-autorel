@@ -22,7 +22,7 @@ class DebianSourcePackage(object):
         Debian source package abstraction
     """
     def __init__(self, linked_tarball, patch_file, source_control_file):
-        self._distribution_tarball = linked_tarball
+        self._linked_tarball = linked_tarball
         self._patch_file = patch_file
         self._source_control_file = source_control_file
 

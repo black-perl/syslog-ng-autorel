@@ -3,6 +3,7 @@
     Configuration options for builders
 """
 import os
+from autorel import settings as global_settings
 
 
 ## Path of the build direcory within the source ##
@@ -33,7 +34,7 @@ TARBALL_FILE_WILDCARD = "syslog-ng-*.tar.gz"
 SOURCE_DIRECTORY = "syslog-ng"
 
 ## Version ##
-VERSION = "3.8.0alpha0"
+VERSION = global_settings.VERSION
 
 ## Original tarball extension ##
 ORIG_TARBALL_FILE_FORMAT = "syslog-ng_{0}.orig.tar.gz"
