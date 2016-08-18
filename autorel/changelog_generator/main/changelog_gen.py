@@ -1,6 +1,6 @@
 """
-    @module chnagelog_gen
-    @class ChnagelogGenerator
+    @module changelog_gen
+    @class ChangelogGenerator
 """
 import pygit2
 import logging
@@ -234,9 +234,3 @@ class ChangelogGenerator(object):
         self._logger.info("Converting chnagelog to markdown format.")
         renderer = ChangelogRenderer(self._entries)
         return renderer.render(file_path)
-
-
-if __name__ == "__main__":
-    generator = ChangelogGenerator()
-    generator.generate()
-    generator.render()
