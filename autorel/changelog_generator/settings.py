@@ -12,14 +12,14 @@ from changelog_generator.renderers import (BugFixRenderer,
                                            FixedIssueRenderer,
                                            MergedPullRenderer
                                            )
+from autorel import settings as global_settings
 
 
 ## TARGET PROJECT CONFIGURATIONS ##
 PROJECT = "balabit/syslog-ng"
-CLONE_URL = "git://github.com/balabit/syslog-ng.git"
 
 ## FETCHER SETTINGS ##
-FETCHER_AUTH_TOKEN = ""
+FETCHER_AUTH_TOKEN = global_settings.GITHUB_AUTH_TOKEN
 FETCHER_PLUGIN = GithubFetcher
 
 ## PARSERS SETTINGS ##
