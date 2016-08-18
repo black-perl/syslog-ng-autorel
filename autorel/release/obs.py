@@ -4,6 +4,7 @@
     - Serves as OpenSuse Build Service(build.opensuse.org)
       client
 """
+import datetime
 import os
 import shutil
 import tempfile
@@ -16,6 +17,23 @@ from osc.core import (checkout_package,
                       )
 
 
+## OBS Settings(Seperate these)
+
+OBS_USER = ""
+
+OBS_PASS = ""
+
+OSC_CONFIG_FILE = "obs_config"
+
+OBS_PROJECT = "home:black-perl"
+
+OBS_PACKAGE = "syslog-ng"
+
+OBS_COMMIT_MSG = "autorel uploaded the package at {CURRDATE}"
+
+TZ_OFFSET = "+05:30"
+
+
 class OBS(object):
     """
         Expose API to do the following operations
@@ -24,10 +42,10 @@ class OBS(object):
         - remove
         - commit
     """
-    def __init__(self, obs_project, obs_package):
+    def __init__(self):
         self._project_directory = tempfile.mkdtemp()
-        self._obs_project = obs_project
-        self._obs_package = obs_package
+        self._obs_project = OBS_PROJECT
+        self._obs_package = OBS_PACKAGE
         self._package_directory = os.path.join(self._project_directory,
                                                self._obs_package
                                                )
@@ -61,7 +79,10 @@ class OBS(object):
             file_name = os.path.basename(file_)
             self._package.addfile(file_name)
 
-    def commit(self, commit_msg):
+    def commit(self):
+        date = datetime.datetime.now().isoformat()
+        date += TZ_OFFSET
+        commit_msg = OBS_COMMIT_MSG.format(CURRDATE=date)
         self._package.commit(commit_msg)
 
     def list_files(self):
@@ -69,4 +90,6 @@ class OBS(object):
 
     def remove_files(self, files):
         for file_ in files:
-            self._package.delete_file(file_)
+            self._package.delete_file(str(file_))
+
+
