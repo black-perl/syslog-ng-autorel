@@ -35,9 +35,13 @@ COMMITTER_EMAIL = "ankprashar@gmail.com"
 
 VERSION_FILE = "VERSION"
 
-SOURCE_TARBALL_DOCKERFILE = "/home/ank/test/syslog-ng-autorel/autorel/dockerfiles/source-tarball-build"
+SOURCE_TARBALL_DOCKERFILE = os.path.join(global_settings.AUTOREL_PATH,
+									     "autorel/dockerfiles/source-tarball-build"
+									     )
 
-DEBIAN_SOURCE_DOCKERFILE =  "/home/ank/test/syslog-ng-autorel/autorel/dockerfiles/debian-source-build"
+DEBIAN_SOURCE_DOCKERFILE =  os.path.join(global_settings.AUTOREL_PATH,
+									     "autorel/dockerfiles/debian-source-build"
+									     )
 
 PULL_REQUEST_TITLE = "New Release"
 
