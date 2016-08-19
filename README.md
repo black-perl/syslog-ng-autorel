@@ -10,7 +10,7 @@ Testing Instructions
 	- GITHUB_AUTH_TOKEN = <github-token-object>
 	- `RELEASE_NAME` & `RELEASE_TAG`
 - Configure `autorel/release/obs.py` for OBS settings
-- Configure `PROJECT_CLONE_PATH` in release/settings.py to the clone url  of the fork you are testing
+- Configure `PROJECT_CLONE_PATH` in release/settings.py to the clone url  of the fork you are testing against.
 - `python3 release_test.py`
 
 Dependencies
