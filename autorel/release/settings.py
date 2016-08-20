@@ -13,10 +13,6 @@ DEBIAN_CHANGELOG = '''
   * New upstream version.
 
  -- BalaBit Development Team <devel@balabit.hu>  {CURRDATE}
-
-Local variables:
-mode: debian-changelog
-End:
 '''
 
 GITHUB_AUTH_TOKEN = global_settings.GITHUB_AUTH_TOKEN
