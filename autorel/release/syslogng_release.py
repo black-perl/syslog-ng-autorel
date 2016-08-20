@@ -115,12 +115,12 @@ class SyslogNgRelease(object):
         debian_changelog_file_path = os.path.join(PROJECT_CLONE_PATH,
                                                   DEBIAN_CHANGELOG_FILE
                                                   )
-        print(debian_changelog_file_path)
         debian_changelog = DEBIAN_CHANGELOG.format(PACKAGE_NAME=PACKAGE,
                                                    PACKAGE_VERSION=self._version,
                                                    RELEASE_TAG=self._release_tag,
                                                    CURRDATE=date
                                                    )
+        debian_changelog = debian_changelog.strip()
         with open(debian_changelog_file_path,"w") as f:
             f.write(debian_changelog)
         self._platform_cli.create_commit(self._release_branch,
