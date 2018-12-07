@@ -17,8 +17,8 @@ type GitServerCli struct {
 	maskedServerClient *github.Client
 }
 
-func New(authenticationToken string) *GitServerCli {
-	accessToken = accessToken
+func NewGitServerClient(authenticationToken string) *GitServerCli {
+	accessToken = authenticationToken
 	return &GitServerCli{}
 }
 
@@ -39,11 +39,11 @@ func (gsc *GitServerCli) GetMergeRequest(ctx context.Context, user string, repo 
 	}
 	// convert the gitServerPullRequest to MergeRequest
 	gitServerUser := gitServerPullRequest.User
-	contributor := newContributor(*gitServerUser.Login, *gitServerUser.Name, *gitServerUser.Email, *gitServerUser.HTMLURL)
+	contributor := newContributor(*gitServerUser.Login, *gitServerUser.HTMLURL)
 	labels := make([]string, len(gitServerPullRequest.Labels))
 	for _, elem := range gitServerPullRequest.Labels {
 		labels = append(labels, *elem.Name)
 	}
-	mergeRequest = newMergeRequest(*gitServerPullRequest.ID, *gitServerPullRequest.Title, *gitServerPullRequest.Body, labels, contributor, *gitServerPullRequest.URL, *gitServerPullRequest.MergedAt)
+	mergeRequest = newMergeRequest(*gitServerPullRequest.ID, *gitServerPullRequest.Title, *gitServerPullRequest.Body, labels, contributor, *gitServerPullRequest.HTMLURL, *gitServerPullRequest.MergedAt)
 	return mergeRequest, nil
 }
