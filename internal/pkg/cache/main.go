@@ -75,7 +75,7 @@ func NewCacheWithDefaults(filename string, cachableTypes []interface{}, itemExpi
 			errorInInstantiation = errors.Wrap(err, fmt.Sprintf("Not able to decode the cache from the file %s", filename))
 		}
 		cacheInstance = &Cache{
-			storage:       cache.NewFrom(defaultItemExpirationTime, defaultCleanUpInterval, persistedCacheItems),
+			storage:       cache.NewFrom(itemExpirationTime, cleanUpInterval, persistedCacheItems),
 			journalFile:   filename,
 			cachableTypes: cachableTypes,
 		}
