@@ -10,21 +10,21 @@ import (
 )
 
 var (
-	accessToken string
+	gitServerAPIAccessToken string
 )
 
 type GitServerCli struct {
 	maskedServerClient *github.Client
 }
 
-func NewGitServerClient(authenticationToken string) *GitServerCli {
-	accessToken = authenticationToken
+func NewGitServerClient(accessToken string) *GitServerCli {
+	gitServerAPIAccessToken = accessToken
 	return &GitServerCli{}
 }
 
-func (gsc *GitServerCli) setupMaskedGitServerClient(accessToken string, ctx context.Context) {
+func (gsc *GitServerCli) setupMaskedGitServerClient(gitServerAPIAccessToken string, ctx context.Context) {
 	tokenSource := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: accessToken},
+		&oauth2.Token{AccessToken: gitServerAPIAccessToken},
 	)
 	transportClient := oauth2.NewClient(ctx, tokenSource)
 	gsc.maskedServerClient = github.NewClient(transportClient)
@@ -32,7 +32,7 @@ func (gsc *GitServerCli) setupMaskedGitServerClient(accessToken string, ctx cont
 
 func (gsc *GitServerCli) GetMergeRequest(ctx context.Context, user string, repo string, pullRequestId int) (MergeRequest, error) {
 	var mergeRequest MergeRequest
-	gsc.setupMaskedGitServerClient(accessToken, ctx)
+	gsc.setupMaskedGitServerClient(gitServerAPIAccessToken, ctx)
 	gitServerPullRequest, _, err := gsc.maskedServerClient.PullRequests.Get(ctx, user, repo, pullRequestId)
 	if err != nil {
 		return mergeRequest, errors.Wrap(err, fmt.Sprintf("Fetching merge request with id : %d failed for repository %s/%s", pullRequestId, user, repo))

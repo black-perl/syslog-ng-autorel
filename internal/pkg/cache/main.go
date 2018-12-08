@@ -40,11 +40,13 @@ func NewCache(filename string, cachableTypes []interface{}) (*Cache, error) {
 		diskCacheFile, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0666)
 		if err != nil {
 			errorInInstantiation = errors.Wrap(err, fmt.Sprintf("Not able to open journal file %s for reading persisted cache items", filename))
+			return
 		}
 		dec := gob.NewDecoder(diskCacheFile)
 		err = dec.Decode(&persistedCacheItems)
 		if err != nil && err.Error() != "EOF" {
 			errorInInstantiation = errors.Wrap(err, fmt.Sprintf("Not able to decode the cache from the file %s", filename))
+			return
 		}
 		cacheInstance = &Cache{
 			storage:       cache.NewFrom(defaultItemExpirationTime, defaultCleanUpInterval, persistedCacheItems),
