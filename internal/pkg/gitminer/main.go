@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/darxtrix/syslog-ng-autorel/internal/pkg/cache"
@@ -25,43 +28,24 @@ type gitObjectsCache interface {
 	RegisterCachableType(interface{})
 }
 
+type workerPool interface {
+	Schedule(func())
+}
+
 type GitMiner struct {
 	repositoryPath     string
 	gsc                gitServerClient
 	goc                gitObjectsCache
 	cachedObjectsTypes []interface{}
+	pool               workerPool
+	repositoryUser     string
+	repositoryName     string
 }
 
 var gitMinerInstance *GitMiner
 var once sync.Once
 
-func GetMiner(repositoryPath string, gitServerAPIAccessToken string, gitObjectsCacheFilePath string) (*GitMiner, error) {
-	var errorInInstantiation error
-	once.Do(func() {
-		cachedObjectsTypes := []interface{}{}
-		cachedObjectsTypes = append(cachedObjectsTypes, gitservercli.MergeRequest{})
-		// instantiate cache for storing the fechted objects
-		goc, err := cache.NewCache(gitObjectsCacheFilePath, cachedObjectsTypes)
-		if err != nil {
-			errorInInstantiation = err
-		}
-		// instantiate the gitServerCli to access the git server api
-		gsc := gitservercli.NewGitServerClient(gitServerAPIAccessToken)
-		// check if the supplied repository path is valid or not
-		if _, err := os.Stat(repositoryPath); err != nil {
-			errorInInstantiation = errors.Wrap(err, fmt.Sprintf("Reposiory path validation failed"))
-		}
-		gitMinerInstance = &GitMiner{
-			repositoryPath:     repositoryPath,
-			gsc:                gsc,
-			goc:                goc,
-			cachedObjectsTypes: cachedObjectsTypes,
-		}
-	})
-	return gitMinerInstance, errorInInstantiation
-}
-
-func (gm *GitMiner) GetMergeRequests(firstCommit string, lastCommit string) ([]*git.Commit, error) {
+func (gm *GitMiner) getMergeCommits(firstCommit string, lastCommit string) ([]git.Commit, error) {
 	repo, err := git.InitRepository(gm.repositoryPath, false)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Error in intiliazing git repository"))
@@ -83,7 +67,7 @@ func (gm *GitMiner) GetMergeRequests(firstCommit string, lastCommit string) ([]*
 	revWalkPtr.Push(startingCommitObject)
 	nextOId := new(git.Oid)
 	var revWalkErr error
-	var mergeCommits []*git.Commit
+	var mergeCommits []git.Commit
 	for {
 		revWalkErr = revWalkPtr.Next(nextOId)
 		if revWalkErr != nil {
@@ -96,11 +80,119 @@ func (gm *GitMiner) GetMergeRequests(firstCommit string, lastCommit string) ([]*
 		if revWalkErr != nil {
 			break
 		} else if commit.ParentCount() == 2 { // merge commit
-			mergeCommits = append(mergeCommits, commit)
+			mergeCommits = append(mergeCommits, *commit)
 		}
 	}
 	if revWalkErr != nil {
 		return nil, errors.Wrap(revWalkErr, fmt.Sprintf("Error during history traversal of the repository"))
 	}
 	return mergeCommits, nil
+}
+
+func (gm *GitMiner) getParsedMergeRequestIDs(commits []git.Commit) ([]int, error) {
+	var match string
+	var mergeRequestIDs []int
+	re, _ := regexp.Compile("#([0-9]+)")
+	for _, commit := range commits {
+		match = re.FindString(commit.Message())
+		if len(match) < 0 {
+			return mergeRequestIDs, errors.New(fmt.Sprintf("Not able to parse merge request id from the commit message %s", commit.Message()))
+		}
+		// remove the # character from the start
+		mergeRequestID := strings.Trim(match, "#")
+		mergeRequestIDInt, err := strconv.Atoi(mergeRequestID)
+		if err != nil {
+			return mergeRequestIDs, errors.Wrap(err, fmt.Sprintf("Not able to integer value from merge request id %s", mergeRequestID))
+		}
+		mergeRequestIDs = append(mergeRequestIDs, mergeRequestIDInt)
+	}
+	return mergeRequestIDs, nil
+}
+
+func (gm *GitMiner) getMergeRequests(mergeRequestsIDs []int) ([]gitservercli.MergeRequest, error) {
+	var mergeRequests []gitservercli.MergeRequest
+	ctx := context.Background()
+	mergeRequestsChan := make(chan gitservercli.MergeRequest, len(mergeRequestsIDs))
+	mergeRequestIDsChan := make(chan int, len(mergeRequestsIDs))
+	quit := make(chan int, 1)
+	err := make(chan error, 1)
+	// schedule goroutines in the pool
+	for i := 0; i < len(mergeRequestsIDs); i++ {
+		gm.pool.Schedule(func() {
+			select {
+			case <-quit:
+				return
+			case mergeRequestID := <-mergeRequestIDsChan:
+				// TODO : Add cache
+				mergeRequest, err1 := gm.gsc.GetMergeRequest(ctx, gm.repositoryUser, gm.repositoryName, mergeRequestID)
+				if err1 != nil {
+					err <- err1
+				} else {
+					mergeRequestsChan <- mergeRequest
+				}
+				return
+			}
+		})
+	}
+	for i := 0; i < len(mergeRequestsIDs); i++ {
+		mergeRequestIDsChan <- mergeRequestsIDs[i]
+	}
+	for {
+		select {
+		case err2 := <-err: // prevent the pending goroutines from running in case of err
+			close(quit)
+			return mergeRequests, err2
+		case mergeRequest := <-mergeRequestsChan:
+			mergeRequests = append(mergeRequests, mergeRequest)
+			if len(mergeRequests) == len(mergeRequestsIDs) { // all goroutines ran successfully
+				return mergeRequests, nil
+			}
+		}
+	}
+}
+
+func GetMiner(repositoryPath string, repositoryUser string, repositoryName string, gitServerAPIAccessToken string, gitObjectsCacheFilePath string, pool workerPool) (*GitMiner, error) {
+	var errorInInstantiation error
+	once.Do(func() {
+		cachedObjectsTypes := []interface{}{}
+		cachedObjectsTypes = append(cachedObjectsTypes, gitservercli.MergeRequest{})
+		// instantiate cache for storing the fechted objects
+		goc, err := cache.NewCache(gitObjectsCacheFilePath, cachedObjectsTypes)
+		if err != nil {
+			errorInInstantiation = err
+		}
+		// instantiate the gitServerCli to access the git server api
+		gsc := gitservercli.NewGitServerClient(gitServerAPIAccessToken)
+		// check if the supplied repository path is valid or not
+		if _, err := os.Stat(repositoryPath); err != nil {
+			errorInInstantiation = errors.Wrap(err, fmt.Sprintf("Reposiory path validation failed"))
+		}
+		gitMinerInstance = &GitMiner{
+			repositoryPath:     repositoryPath,
+			gsc:                gsc,
+			goc:                goc,
+			cachedObjectsTypes: cachedObjectsTypes,
+			pool:               pool,
+			repositoryUser:     repositoryUser,
+			repositoryName:     repositoryName,
+		}
+	})
+	return gitMinerInstance, errorInInstantiation
+}
+
+func (gm *GitMiner) GetMergeRequests(firstCommit string, lastCommit string) ([]gitservercli.MergeRequest, error) {
+	var mergeRequests []gitservercli.MergeRequest
+	mergeCommits, err := gm.getMergeCommits(firstCommit, lastCommit)
+	if err != nil {
+		return mergeRequests, err
+	}
+	mergeRequestIDs, err := gm.getParsedMergeRequestIDs(mergeCommits)
+	if err != nil {
+		return mergeRequests, err
+	}
+	mergeRequests, err = gm.getMergeRequests(mergeRequestIDs)
+	if err != nil {
+		return mergeRequests, err
+	}
+	return mergeRequests, nil
 }
