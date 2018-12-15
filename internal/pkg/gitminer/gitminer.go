@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/darxtrix/syslog-ng-autorel/internal/pkg/cache"
 	"github.com/darxtrix/syslog-ng-autorel/internal/pkg/gitservercli"
@@ -46,7 +47,7 @@ var gitMinerInstance *GitMiner
 var once sync.Once
 
 func (gm *GitMiner) getMergeCommits(firstCommit string, lastCommit string) ([]git.Commit, error) {
-	repo, err := git.InitRepository(gm.repositoryPath, false)
+	repo, err := git.OpenRepository(gm.repositoryPath)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Error in intiliazing git repository"))
 	}
@@ -147,6 +148,8 @@ func (gm *GitMiner) getMergeRequests(mergeRequestsIDs []int) ([]gitservercli.Mer
 			if len(mergeRequests) == len(mergeRequestsIDs) { // all goroutines ran successfully
 				return mergeRequests, nil
 			}
+		case <-time.After(3 * time.Second):
+			return mergeRequests, errors.New("Error timeout while getting data")
 		}
 	}
 }
