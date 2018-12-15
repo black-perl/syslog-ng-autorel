@@ -86,7 +86,7 @@ func NewCacheWithDefaults(filename string, cachableTypes []interface{}, itemExpi
 }
 
 // Put adds or replaces an entry in cache
-func (c *Cache) Put(key string, val interface{}) {
+func (c *Cache) Set(key string, val interface{}) {
 	c.storage.Set(key, val, 0) // use deafult expiration time
 }
 
@@ -114,6 +114,7 @@ func (c *Cache) Persist() error {
 	defer c.mutex.Unlock()
 	// encode the cache items
 	diskCacheFile, err := os.OpenFile(c.journalFile, os.O_RDWR, 0600)
+	defer diskCacheFile.Close()
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Not able to open journal file %s for persisting cache", c.journalFile))
 	}
