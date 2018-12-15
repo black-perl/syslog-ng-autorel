@@ -21,7 +21,7 @@ type gitServerClient interface {
 }
 
 type gitObjectsCache interface {
-	Put(string, interface{})
+	Set(string, interface{})
 	Get(string) (interface{}, bool)
 	Delete(string)
 	Flush()
@@ -29,16 +29,11 @@ type gitObjectsCache interface {
 	RegisterCachableType(interface{})
 }
 
-type workerPool interface {
-	Schedule(func())
-}
-
 type GitMiner struct {
 	repositoryPath     string
 	gsc                gitServerClient
 	goc                gitObjectsCache
 	cachedObjectsTypes []interface{}
-	pool               workerPool
 	repositoryUser     string
 	repositoryName     string
 }
@@ -119,21 +114,27 @@ func (gm *GitMiner) getMergeRequests(mergeRequestsIDs []int) ([]gitservercli.Mer
 	err := make(chan error, 1)
 	// schedule goroutines in the pool
 	for i := 0; i < len(mergeRequestsIDs); i++ {
-		gm.pool.Schedule(func() {
+		go func() {
 			select {
 			case <-quit:
 				return
 			case mergeRequestID := <-mergeRequestIDsChan:
-				// TODO : Add cache
-				mergeRequest, err1 := gm.gsc.GetMergeRequest(ctx, gm.repositoryUser, gm.repositoryName, mergeRequestID)
-				if err1 != nil {
-					err <- err1
+				cacheKey := fmt.Sprintf("%s_%s_%d", gm.repositoryUser, gm.repositoryName, mergeRequestID)
+				cachedMergeRequest, isFound := gm.goc.Get(cacheKey)
+				if isFound {
+					mergeRequestsChan <- cachedMergeRequest.(gitservercli.MergeRequest)
 				} else {
-					mergeRequestsChan <- mergeRequest
+					mergeRequest, err1 := gm.gsc.GetMergeRequest(ctx, gm.repositoryUser, gm.repositoryName, mergeRequestID)
+					if err1 != nil {
+						err <- err1
+					} else {
+						gm.goc.Set(cacheKey, mergeRequest)
+						mergeRequestsChan <- mergeRequest
+					}
 				}
 				return
 			}
-		})
+		}()
 	}
 	for i := 0; i < len(mergeRequestsIDs); i++ {
 		mergeRequestIDsChan <- mergeRequestsIDs[i]
@@ -148,13 +149,13 @@ func (gm *GitMiner) getMergeRequests(mergeRequestsIDs []int) ([]gitservercli.Mer
 			if len(mergeRequests) == len(mergeRequestsIDs) { // all goroutines ran successfully
 				return mergeRequests, nil
 			}
-		case <-time.After(3 * time.Second):
+		case <-time.After(10 * time.Second):
 			return mergeRequests, errors.New("Error timeout while getting data")
 		}
 	}
 }
 
-func GetMiner(repositoryPath string, repositoryUser string, repositoryName string, gitServerAPIAccessToken string, gitObjectsCacheFilePath string, pool workerPool) (*GitMiner, error) {
+func GetMiner(repositoryPath string, repositoryUser string, repositoryName string, gitServerAPIAccessToken string, gitObjectsCacheFilePath string) (*GitMiner, error) {
 	var errorInInstantiation error
 	once.Do(func() {
 		cachedObjectsTypes := []interface{}{}
@@ -175,7 +176,6 @@ func GetMiner(repositoryPath string, repositoryUser string, repositoryName strin
 			gsc:                gsc,
 			goc:                goc,
 			cachedObjectsTypes: cachedObjectsTypes,
-			pool:               pool,
 			repositoryUser:     repositoryUser,
 			repositoryName:     repositoryName,
 		}
@@ -194,6 +194,10 @@ func (gm *GitMiner) GetMergeRequests(firstCommit string, lastCommit string) ([]g
 		return mergeRequests, err
 	}
 	mergeRequests, err = gm.getMergeRequests(mergeRequestIDs)
+	if err != nil {
+		return mergeRequests, err
+	}
+	err = gm.goc.Persist() // persist cache
 	if err != nil {
 		return mergeRequests, err
 	}

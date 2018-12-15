@@ -5,23 +5,15 @@ import (
 )
 
 type Contributor struct {
-	username   string
-	profileURL string
+	Username   string
+	ProfileURL string
 }
 
 func newContributor(username string, profileURL string) Contributor {
 	return Contributor{
-		username:   username,
-		profileURL: profileURL,
+		Username:   username,
+		ProfileURL: profileURL,
 	}
-}
-
-func (c Contributor) getUsername() string {
-	return c.username
-}
-
-func (c Contributor) getProfileURL() string {
-	return c.profileURL
 }
 
 func (c Contributor) ToString() string {
