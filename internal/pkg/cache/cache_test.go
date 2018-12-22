@@ -14,9 +14,10 @@ type student struct {
 // because of the singleton instance
 
 func TestPersist(t *testing.T) {
-	// instantiate cache
+	// array of interfaces
 	k := []interface{}{}
 	k = append(k, student{})
+	// instantiate cache
 	cache, err := NewCache("./temp", k)
 	if err != nil {
 		panic(err)
@@ -44,8 +45,8 @@ func TestPersist(t *testing.T) {
 	}
 
 	//Put
-	cache.Put("student1", entry1)
-	cache.Put("student2", entry2)
+	cache.Set("student1", entry1)
+	cache.Set("student2", entry2)
 
 	//Persist
 	err = cache.Persist()
@@ -70,9 +71,10 @@ func TestPersist(t *testing.T) {
 }
 
 func TestPutAndGet(t *testing.T) {
-	// instantiate cache
+	// array of interfaces
 	k := []interface{}{}
 	k = append(k, student{})
+	// instantiate cache
 	cache, err := NewCache("./temp", k)
 	if err != nil {
 		panic(err)
@@ -84,7 +86,7 @@ func TestPutAndGet(t *testing.T) {
 	}
 
 	// Put
-	cache.Put("student", entry)
+	cache.Set("student", entry)
 
 	// Get
 	resp, _ := cache.Get("student")
@@ -98,9 +100,10 @@ func TestPutAndGet(t *testing.T) {
 }
 
 func TestFlush(t *testing.T) {
-	// instantiate cache
+	// array of interfaces
 	k := []interface{}{}
 	k = append(k, student{})
+	// instantiate cache
 	cache, err := NewCache("./temp", k)
 	if err != nil {
 		panic(err)
@@ -112,7 +115,7 @@ func TestFlush(t *testing.T) {
 	}
 
 	// Put
-	cache.Put("student", entry)
+	cache.Set("student", entry)
 
 	// Flush
 	cache.Flush()
