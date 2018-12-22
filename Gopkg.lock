@@ -42,6 +42,14 @@
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
   branch = "master"
   digest = "1:f8b491a7c25030a895a0e579742d07136e6958e77ef2d46e769db8eec4e58fcd"
   name = "golang.org/x/net"
@@ -79,6 +87,14 @@
   revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
   version = "v1.3.0"
 
+[[projects]]
+  branch = "v27"
+  digest = "1:6af8f24e29863581ecaa0900389a20c5b7cd13506fb83c317494a4f92253d6d5"
+  name = "gopkg.in/libgit2/git2go.v27"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "290d16a225a2d07044038464f3c7eb7e53338c29"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -86,7 +102,9 @@
     "github.com/google/go-github/github",
     "github.com/patrickmn/go-cache",
     "github.com/pkg/errors",
+    "github.com/satori/go.uuid",
     "golang.org/x/oauth2",
+    "gopkg.in/libgit2/git2go.v27",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
