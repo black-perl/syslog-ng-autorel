@@ -1,41 +1,28 @@
 package changelog_generator
 
-import (
-	"encoding/json"
-
-	"github.com/satori/go.uuid"
-)
-
 type TextSection struct {
-	ID             uuid.UUID
-	Type           ChangelogSectionType
-	changelogEntry TextEntry
-	Name           string
+	ChangelogSection
 }
 
-func NewTextSection(sectionName string) TextSection {
+func NewTextSection(sectionDesc string) TextSection {
 	return TextSection{
-		ID:   uuid.NewV4(),
-		Type: TextSectionType,
-		Name: sectionName,
+		ChangelogSection: newChangelogSection(sectionDesc),
 	}
 }
 
-func (textSec TextSection) AddOrReplaceContent(content string) {
-	if (textSec.changelogEntry != TextEntry{}) {
-		textSec.changelogEntry.setContent(content)
-	} else {
-		textSec.changelogEntry = NewTextEntry(content)
+func (textSec TextSection) AddEntry(entry TextEntry) TextEntry {
+	addedEntry := textSec.addEntry(entry.ID, entry)
+	return addedEntry.(TextEntry)
+}
+
+func (textSec TextSection) GetEntry(entryID string) (TextEntry, bool) {
+	entry, found := textSec.getEntry(entryID)
+	if found {
+		return entry.(TextEntry), found
 	}
+	return entry.(TextEntry), found
 }
 
-func (textSec TextSection) GetContent() string {
-	var entry TextEntry
-	entry = textSec.changelogEntry
-	return entry.getContent()
-}
-
-func (textSec TextSection) ToString() string {
-	resp, _ := json.Marshal(textSec)
-	return string(resp)
+func (textSec TextSection) RemoveEntry(entryId string) {
+	textSec.removeEntry(entryId)
 }

@@ -8,22 +8,14 @@ import (
 
 type TextEntry struct {
 	ID      uuid.UUID
-	content string
+	Content string
 }
 
 func NewTextEntry(content string) TextEntry {
 	return TextEntry{
 		ID:      uuid.NewV4(),
-		content: content,
+		Content: content,
 	}
-}
-
-func (textEntry TextEntry) getContent() string {
-	return textEntry.content
-}
-
-func (textEntry TextEntry) setContent(content string) string {
-	textEntry.content = content
 }
 
 func (textEntry TextEntry) ToString() string {
